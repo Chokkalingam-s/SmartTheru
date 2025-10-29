@@ -8,12 +8,11 @@ const LoginForm = ({ onLogin }) => {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState(roles[0]);
   const [error, setError] = useState('');
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     try {
-      const res = await axios.post('/api/auth/login', { email, password, role });
+      const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/auth/login`, { email, password, role });
       onLogin(res.data); // returns token and role or user info
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed');
