@@ -1,42 +1,91 @@
-#root {
-  max-width: 1280px;
+.auth-bg {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f6f2ff 0%, #3e1ab3 100%);
+  padding: 0 16px;
+}
+
+.auth-card {
+  background: #fff;
+  width: 100%;
+  max-width: 400px;
+  border-radius: 18px;
+  box-shadow: 0 6px 28px rgba(100, 42, 181, 0.09);
+  padding: 36px 28px 28px 28px;
   margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.auth-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+.auth-tab {
+  flex: 1;
+  padding-bottom: 10px;
+  font-weight: 600;
+  font-size: 16px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #6e56cf;
+  border-bottom: 2.5px solid transparent;
+  transition: border 0.2s, color 0.2s;
+}
+.auth-tab-active {
+  color: #6C2EBE;
+  border-bottom: 2.5px solid #6C2EBE;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.auth-input {
+  border: 1.3px solid #e0dbee;
+  border-radius: 7px;
+  padding: 11px 15px;
+  font-size: 16px;
+  outline: none;
+  transition: box-shadow 0.16s;
+}
+.auth-input:focus {
+  border-color: #a084e8;
+  box-shadow: 0 0 0 2px #e2dbfa;
+}
+
+.auth-submit {
+  width: 100%;
+  padding: 12px 0;
+  background: linear-gradient(90deg,#6c2ebe,#9648e5 95%);
+  color: #fff;
+  font-weight: 700;
+  font-size: 16px;
+  border-radius: 8px;
+  border: none;
+  letter-spacing: 0.5px;
+  margin-top: 6px;
+  cursor: pointer;
+  transition: background 0.16s, box-shadow 0.14s;
+  box-shadow: 0 2px 8px rgba(108,46,190,0.09);
+}
+.auth-submit:hover {
+  background: linear-gradient(90deg,#9648e5,#6c2ebe 95%);
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .auth-card {
+    padding: 24px 7px;
+    max-width: 98vw;
+    min-width: 0;
   }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
 }
