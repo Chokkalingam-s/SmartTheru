@@ -1,7 +1,11 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../config/axios";
+import { SessionContext } from "../App";
 
 export default function AuthCard() {
+  const { login } = useContext(SessionContext);
+  const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [form, setForm] = useState({
     name: "",
@@ -9,58 +13,57 @@ export default function AuthCard() {
     password: "",
     role: "Ward Admin",
   });
+  const [error, setError] = useState("");
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
     const url = isLogin ? "/api/auth/login" : "/api/auth/signup";
     try {
       const res = await api.post(url, form);
-      alert(`${isLogin ? "Login" : "Signup"} successful`);
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("role", res.data.role);
-      localStorage.setItem("name", res.data.name);
+
+      // Pass ONLY to memory session, not localStorage
+      login({ token: res.data.token, role: res.data.role, name: res.data.name });
+
+      // Redirect ward admin
+      if (res.data.role === "Ward Admin") {
+        navigate("/wardadmin");
+      } else {
+        setError("Only Ward Admins can login here.");
+      }
     } catch (err) {
-      alert(err.response?.data?.message || err.message || "Error occurred");
+      setError(err.response?.data?.message || err.message || "Error occurred");
     }
   };
 
   return (
     <div style={styles.bg}>
       <div style={styles.card}>
-        {/* Tabs */}
         <div style={styles.tabs}>
           <button
-            style={{
-              ...styles.tab,
-              ...(isLogin ? styles.tabActive : {}),
-            }}
+            style={{ ...styles.tab, ...(isLogin ? styles.tabActive : {}) }}
             onClick={() => setIsLogin(true)}
             type="button"
           >
             Login
           </button>
           <button
-            style={{
-              ...styles.tab,
-              ...(!isLogin ? styles.tabActive : {}),
-            }}
+            style={{ ...styles.tab, ...(!isLogin ? styles.tabActive : {}) }}
             onClick={() => setIsLogin(false)}
             type="button"
           >
             Signup
           </button>
         </div>
-
         <form onSubmit={handleSubmit} style={styles.form}>
           {!isLogin && (
             <input
               type="text"
               name="name"
               placeholder="Full Name"
-              autoComplete="name"
               onChange={handleChange}
               style={styles.input}
               required
@@ -70,7 +73,6 @@ export default function AuthCard() {
             type="email"
             name="email"
             placeholder="Email"
-            autoComplete="email"
             onChange={handleChange}
             style={styles.input}
             required
@@ -79,7 +81,6 @@ export default function AuthCard() {
             type="password"
             name="password"
             placeholder="Password"
-            autoComplete="current-password"
             onChange={handleChange}
             style={styles.input}
             required
@@ -94,6 +95,7 @@ export default function AuthCard() {
             <option>District Admin</option>
             <option>Collector</option>
           </select>
+          {error && <div style={styles.error}>{error}</div>}
           <button type="submit" style={styles.submit}>
             {isLogin ? "Login" : "Signup"}
           </button>
