@@ -1,194 +1,232 @@
-import React, { useContext } from "react";
+// WardAdminDashboard.jsx
+import React, { useContext, useState, useEffect, useRef } from "react";
 import { SessionContext } from "../App";
 import { useNavigate } from "react-router-dom";
+import Sidebar from "./Sidebar";
+
+// Images for collector carousel
+const garbageCollectorImages = [
+  "https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=400&q=80",
+];
+
+// Collector image carousel
+function CollectorCarousel({ images }) {
+  const [index, setIndex] = useState(0);
+  const timer = useRef();
+
+  useEffect(() => {
+    timer.current = setInterval(
+      () => setIndex((i) => (i + 1) % images.length),
+      3000
+    );
+    return () => clearInterval(timer.current);
+  }, [images.length]);
+
+  const pause = () => clearInterval(timer.current);
+  const play = () => {
+    timer.current = setInterval(
+      () => setIndex((i) => (i + 1) % images.length),
+      3000
+    );
+  };
+
+  return (
+    <div style={styles.carouselBox} onMouseEnter={pause} onMouseLeave={play}>
+      {images.map((img, i) => (
+        <img
+          key={img}
+          src={img}
+          alt="Collector activity"
+          style={{
+            ...styles.carouselImage,
+            opacity: i === index ? 1 : 0,
+            zIndex: i === index ? 2 : 1,
+            pointerEvents: "none",
+            transition: "opacity 0.6s cubic-bezier(0.77,0,0.175,1)",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
 
 export default function WardAdminDashboard() {
-  const totalAreaCovered = "5.2 km²";
-  const gcLoggedIn = 8;
-  const cleanlinessScore = "94%";
-  const checkpoints = 16;
-  const checkpointsCovered = 11;
-  const activeGC = 7;
-  const lastSync = "5 min ago";
-
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { logout, session } = useContext(SessionContext);
   const navigate = useNavigate();
+
   const handleLogout = () => {
     logout();
     navigate("/");
   };
 
+  // Data placeholders
+  const totalAreaCovered = "5.2 km²";
+  const gcLoggedIn = garbageCollectorImages.length;
+  const cleanlinessScore = "94%";
+  const checkpoints = 16;
+  const checkpointsCovered = 11;
+  const lastSync = "5 min ago";
+  const activeGC = 7;
+
+  // Toggle sidebar for mobile
+  const toggleSidebar = () => setSidebarOpen((open) => !open);
+
   return (
-    <div style={styles.bg}>
-      <aside style={styles.sidenav}>
-        <div style={styles.logoBox}>
-          <div style={styles.logoIcon}>♻️</div>
-          <span style={styles.logoText}>WardClean</span>
-        </div>
-        <nav>
-          <div style={styles.navSection}>
-            <a href="#" style={{ ...styles.navItem, ...styles.navItemActive }}>
-              Dashboard
-            </a>
-            <a href="#" style={styles.navItem}>
-              Map
-            </a>
-            <a href="#" style={styles.navItem}>
-              Checkpoints
-            </a>
-            <a href="#" style={styles.navItem}>
-              Collectors
-            </a>
-            <a href="#" style={styles.navItem}>
-              Reports
-            </a>
-          </div>
-        </nav>
-      </aside>
+    <>
+      <div style={styles.bg}>
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <main style={styles.main}>
-        {/* Topbar */}
-        <div style={styles.topbar}>
-          <div style={styles.titleBox}>
-            <h1 style={styles.heading}>Ward Admin Dashboard</h1>
-            <span style={styles.lastSync}>Last Sync: {lastSync}</span>
-          </div>
-          <div style={styles.profile}>
-            <span style={styles.profileName}>
-              {session && session.name ? session.name[0] : "A"}
-            </span>
-            <button style={styles.logoutBtn} onClick={handleLogout}>
-              Logout
-            </button>
-          </div>
-        </div>
-
-        {/* KPI Cards */}
-        <div style={styles.cardGrid}>
-          <div style={styles.card}>
-            <div style={styles.cardLabel}>Total Area Covered</div>
-            <div style={styles.cardValuePrimary}>{totalAreaCovered}</div>
-          </div>
-          <div style={styles.card}>
-            <div style={styles.cardLabel}>GCs Logged In</div>
-            <div style={styles.cardValueGreen}>{gcLoggedIn}</div>
-          </div>
-          <div style={styles.card}>
-            <div style={styles.cardLabel}>Cleanliness Score</div>
-            <div style={styles.cardValuePrimary}>{cleanlinessScore}</div>
-          </div>
-          <div style={styles.card}>
-            <div style={styles.cardLabel}>Checkpoints Monitored</div>
-            <div style={styles.cardValue}>{checkpoints}</div>
-            <div style={styles.cardSub}>
-              Covered: <span style={styles.subGreen}>{checkpointsCovered}</span>
-            </div>
-          </div>
-          <div style={styles.card}>
-            <div style={styles.cardLabel}>Active Collectors</div>
-            <div style={styles.cardValue}>{activeGC}</div>
-          </div>
-          <div style={styles.card}>
-            <div style={styles.cardLabel}>Download Reports</div>
-            <button style={styles.reportButton}>Performance Report</button>
-          </div>
-        </div>
-
-        {/* Graph and Map row (static placeholder) */}
-        <div style={styles.row}>
-          <div style={styles.widget}>
-            <div style={styles.widgetTitle}>Checkpoints Progress</div>
-            <div style={styles.progressBarBox}>
-              <div
-                style={{
-                  ...styles.progressBar,
-                  width: `${(checkpointsCovered / checkpoints) * 100}%`,
-                }}
-              />
-            </div>
-            <div style={styles.progressLabel}>
-              {checkpointsCovered} of {checkpoints} checkpoints covered
-            </div>
-          </div>
-          <div style={styles.widget}>
-            <div style={styles.widgetTitle}>
-              Today's Collector Activity (Snapshot)
-            </div>
-            <div style={styles.avatarsGroup}>
-              {[...Array(gcLoggedIn)].map((_, i) => (
-                <div
-                  key={i}
-                  style={{ ...styles.avatar, background: "#a387da" }}
+        <main style={styles.main}>
+          <div style={styles.topbar}>
+            {/* Hamburger Button visible on mobile */}
+            <button
+              className="hamburger-btn"
+              onClick={toggleSidebar}
+              aria-label="Toggle menu"
+            >
+              {sidebarOpen ? (
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  stroke="#6c2ebe"
+                  strokeWidth="3"
+                  strokeLinecap="round"
                 >
-                  {String.fromCharCode(66 + i)}
-                </div>
-              ))}
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              ) : (
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  stroke="#6c2ebe"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                >
+                  <line x1="3" y1="6" x2="21" y2="6" />
+                  <line x1="3" y1="12" x2="21" y2="12" />
+                  <line x1="3" y1="18" x2="21" y2="18" />
+                </svg>
+              )}
+            </button>
+            <div style={styles.titleBox}>
+              <h1 style={styles.heading}>Ward Admin Dashboard</h1>
+              <span style={styles.lastSync}>Last Sync: {lastSync}</span>
             </div>
-            <div style={{ fontSize: 14, color: "#7b7e91" }}>
-              Active on Field Now
+            <div style={styles.profile}>
+              <span style={styles.profileName}>
+                {session && session.name ? session.name[0] : "A"}
+              </span>
+              <button style={styles.logoutBtn} onClick={handleLogout}>
+                Logout
+              </button>
             </div>
           </div>
-        </div>
-      </main>
-    </div>
+
+          <div style={styles.cardGrid}>
+            <div style={styles.card}>
+              <div style={styles.cardLabel}>Total Area Covered</div>
+              <div style={styles.cardValuePrimary}>{totalAreaCovered}</div>
+            </div>
+            <div style={styles.card}>
+              <div style={styles.cardLabel}>GCs Logged In</div>
+              <div style={styles.cardValueGreen}>{gcLoggedIn}</div>
+            </div>
+            <div style={styles.card}>
+              <div style={styles.cardLabel}>Cleanliness Score</div>
+              <div style={styles.cardValuePrimary}>{cleanlinessScore}</div>
+            </div>
+            <div style={styles.card}>
+              <div style={styles.cardLabel}>Checkpoints Monitored</div>
+              <div style={styles.cardValue}>{checkpoints}</div>
+              <div style={styles.cardSub}>
+                Covered:{" "}
+                <span style={styles.subGreen}>{checkpointsCovered}</span>
+              </div>
+            </div>
+            <div style={styles.card}>
+              <div style={styles.cardLabel}>Active Collectors</div>
+              <div style={styles.cardValue}>{activeGC}</div>
+            </div>
+            <div style={styles.card}>
+              <div style={styles.cardLabel}>Download Reports</div>
+              <button style={styles.reportButton}>Performance Report</button>
+            </div>
+          </div>
+
+          <div style={styles.row}>
+            <div style={styles.widget}>
+              <div style={styles.widgetTitle}>Checkpoints Progress</div>
+              <div style={styles.progressBarBox}>
+                <div
+                  style={{
+                    ...styles.progressBar,
+                    width: `${(checkpointsCovered / checkpoints) * 100}%`,
+                  }}
+                />
+              </div>
+              <div style={styles.progressLabel}>
+                {checkpointsCovered} of {checkpoints} checkpoints covered
+              </div>
+            </div>
+            <div style={styles.widget}>
+              <div style={styles.widgetTitle}>Today's Collector Activity</div>
+              <div style={styles.gcCarousel}>
+                <CollectorCarousel images={garbageCollectorImages} />
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+
+      <style>{`
+        /* Hamburger button */
+        .hamburger-btn {
+          display: none;
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          padding: 4px 8px 0 0;
+          margin-right: 12px;
+          align-self: center;
+        }
+
+        /* Responsive styles */
+        @media (max-width: 600px) {
+          /* Show hamburger */
+          .hamburger-btn {
+            display: block;
+          }
+          main {
+            padding: 14px 12px 20px 12px !important;
+          }
+          .cardGrid {
+            grid-template-columns: 1fr !important;
+            gap: 13px !important;
+            margin-bottom: 18px !important;
+          }
+          .row {
+            flex-direction: column !important;
+            gap: 17px !important;
+          }
+        }
+      `}</style>
+    </>
   );
 }
 
 const styles = {
   bg: {
-    height: "100vh",
-    minHeight: "100%",
+    minHeight: "100vh",
     width: "100vw",
     background: "#f7f7fa",
     display: "flex",
     fontFamily: "'Inter','Segoe UI',Arial,sans-serif",
-  },
-  sidenav: {
-    minWidth: 220,
-    width: 220,
-    background: "#fff",
-    borderRight: "1.5px solid #eee",
-    padding: "26px 0 0 0",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "stretch",
-    boxShadow: "2px 0 8px #ede7fa30",
-  },
-  logoBox: {
-    display: "flex",
-    alignItems: "center",
-    fontWeight: 800,
-    padding: "0 32px 20px 32px",
-    fontSize: 18,
-    gap: 10,
-  },
-  logoIcon: {
-    color: "#8d4ce0",
-    fontSize: 26,
-  },
-  logoText: {
-    color: "#6C2EBE",
-    fontWeight: 800,
-  },
-  navSection: {
-    display: "flex",
-    flexDirection: "column",
-    padding: "10px 8px",
-    gap: 7,
-    marginTop: 24,
-  },
-  navItem: {
-    padding: "10px 16px",
-    fontSize: 15,
-    color: "#6b6d7b",
-    borderRadius: 8,
-    fontWeight: 600,
-    textDecoration: "none",
-    transition: "all .13s",
-  },
-  navItemActive: {
-    color: "#6C2EBE",
-    background: "#efe7fc",
   },
   main: {
     flex: 1,
@@ -238,6 +276,18 @@ const styles = {
     justifyContent: "center",
     boxShadow: "0 2px 12px #c7aaff55",
     letterSpacing: 1,
+  },
+  logoutBtn: {
+    marginLeft: 16,
+    padding: "6px 18px",
+    background: "#efebfa",
+    color: "#6926a5",
+    fontWeight: 600,
+    fontSize: "14px",
+    border: "none",
+    borderRadius: 6,
+    cursor: "pointer",
+    transition: "background 0.12s",
   },
   cardGrid: {
     width: "100%",
@@ -356,35 +406,34 @@ const styles = {
     fontSize: 15,
     letterSpacing: "0.01em",
   },
-  avatarsGroup: {
+  gcCarousel: {
     display: "flex",
-    gap: 12,
-    margin: "22px 0 10px 3px",
-    flexWrap: "wrap",
-  },
-  avatar: {
-    width: 38,
-    height: 38,
-    background: "#7B36DF",
-    borderRadius: "50%",
-    color: "#fff",
-    fontWeight: 700,
-    fontSize: 17,
-    display: "flex",
-    alignItems: "center",
     justifyContent: "center",
-    boxShadow: "0 1.5px 8px #c5b1fe40",
+    alignItems: "center",
+    height: 132,
+    margin: "18px 0 10px 1px",
   },
-  logoutBtn: {
-    marginLeft: 16,
-    padding: "6px 18px",
-    background: "#efebfa",
-    color: "#6926a5",
-    fontWeight: 600,
-    fontSize: "14px",
-    border: "none",
-    borderRadius: 6,
-    cursor: "pointer",
-    transition: "background 0.12s",
-},
+  carouselBox: {
+    position: "relative",
+    width: 110,
+    height: 110,
+    minWidth: 80,
+    minHeight: 80,
+    maxWidth: 160,
+    maxHeight: 160,
+    borderRadius: 14,
+    overflow: "hidden",
+    background: "#eaddff",
+    boxShadow: "0 2.5px 20px #c5b1fea8",
+    margin: "0 auto",
+  },
+  carouselImage: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+    borderRadius: 14,
+    position: "absolute",
+    left: 0,
+    top: 0,
+  },
 };
