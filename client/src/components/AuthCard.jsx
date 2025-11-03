@@ -24,11 +24,12 @@ export default function AuthCard() {
     const url = isLogin ? "/api/auth/login" : "/api/auth/signup";
     try {
       const res = await api.post(url, form);
+      login({
+        token: res.data.token,
+        role: res.data.role,
+        name: res.data.name,
+      });
 
-      // Pass ONLY to memory session, not localStorage
-      login({ token: res.data.token, role: res.data.role, name: res.data.name });
-
-      // Redirect ward admin
       if (res.data.role === "Ward Admin") {
         navigate("/wardadmin");
       } else {
@@ -167,8 +168,7 @@ const styles = {
   submit: {
     width: "100%",
     padding: "12px 0",
-    background:
-      "linear-gradient(90deg,#6c2ebe,#9648e5 95%)",
+    background: "linear-gradient(90deg,#6c2ebe,#9648e5 95%)",
     color: "#fff",
     fontWeight: 700,
     fontSize: 16,

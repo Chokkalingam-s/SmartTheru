@@ -3,6 +3,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const { connectDB } = require('./config/config');
 const authRoutes = require('./routes/authRoutes');
+const collectorRoutes = require('./routes/collectorRoutes');
 const { sequelize } = require('./models');
 
 dotenv.config();
@@ -18,6 +19,7 @@ app.use(cors({ origin: "http://localhost:5173", credentials: true }));
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);
+app.use('/api/collectors', collectorRoutes);
 
 app.get('/', (req, res) => {
   res.send('SmartTheru backend running...');

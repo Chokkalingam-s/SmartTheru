@@ -1,7 +1,9 @@
 // Sidebar.jsx
 import React from "react";
+import { Link, useLocation } from "react-router-dom";
 
 export default function Sidebar({ isOpen, onClose }) {
+  const location = useLocation();
   return (
     <>
       <aside className={`sidenav ${isOpen ? "open" : ""}`}>
@@ -11,18 +13,14 @@ export default function Sidebar({ isOpen, onClose }) {
         </div>
         <nav>
           <div style={styles.navSection}>
-            <a href="#" className="navItem active">
-              Dashboard
-            </a>
+              <Link to="/wardadmin" className={`navItem${location.pathname === "/wardadmin" ? " active" : ""}`}>Dashboard</Link>
             <a href="#" className="navItem">
               Map
             </a>
             <a href="#" className="navItem">
               Checkpoints
             </a>
-            <a href="#" className="navItem">
-              Collectors
-            </a>
+            <Link to="/collectors" className={`navItem${location.pathname === "/collectors" ? " active" : ""}`}>Collectors</Link>
             <a href="#" className="navItem">
               Reports
             </a>
