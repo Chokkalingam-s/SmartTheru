@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from "react";
+import DashboardLayout from "./DashboardLayout"; // Use the layout component
+import { useNavigate } from "react-router-dom";
 
 export default function CollectorsPage() {
   const [collectors, setCollectors] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({ name: "", mobile: "", address: "" });
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetch("http://localhost:5000/api/collectors")
@@ -48,7 +51,7 @@ export default function CollectorsPage() {
   };
 
   return (
-    <div style={styles.page}>
+    <DashboardLayout>
       <h2 style={styles.heading}>Collectors</h2>
       <div style={styles.tableWrapper}>
         {loading ? (
@@ -133,36 +136,16 @@ export default function CollectorsPage() {
           </div>
         </div>
       )}
-
-      <style>{`
-        @media (max-width: 600px) {
-          table {
-            font-size: 14px;
-          }
-          th, td {
-            padding: 8px 6px;
-          }
-          .addButton {
-            padding: 8px 14px;
-          }
-        }
-      `}</style>
-    </div>
+    </DashboardLayout>
   );
 }
 
+// Keep these styles from your CollectorsPage or adjust if needed
 const styles = {
-  page: {
-    padding: 24,
-    fontFamily: "'Inter','Segoe UI',Arial,sans-serif",
-    color: "#3b3270",
-    background: "#f7f7fa",
-    minHeight: "100vh",
-    boxSizing: "border-box",
-  },
   heading: {
     fontWeight: 800,
     fontSize: 26,
+    color: "#3b3270",
     marginBottom: 20,
   },
   tableWrapper: {

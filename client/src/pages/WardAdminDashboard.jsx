@@ -1,14 +1,13 @@
 // WardAdminDashboard.jsx
 import React, { useContext, useState, useEffect, useRef } from "react";
 import { SessionContext } from "../App";
-import { useNavigate } from "react-router-dom";
-import Sidebar from "./Sidebar";
+import DashboardLayout from "./DashBoardLayout";
 
 // Images for collector carousel
 const garbageCollectorImages = [
   "https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=400&q=80",
   "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80",
-  "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&w=400&q=80",
 ];
 
 // Collector image carousel
@@ -17,19 +16,13 @@ function CollectorCarousel({ images }) {
   const timer = useRef();
 
   useEffect(() => {
-    timer.current = setInterval(
-      () => setIndex((i) => (i + 1) % images.length),
-      3000
-    );
+    timer.current = setInterval(() => setIndex((i) => (i + 1) % images.length), 3000);
     return () => clearInterval(timer.current);
   }, [images.length]);
 
   const pause = () => clearInterval(timer.current);
   const play = () => {
-    timer.current = setInterval(
-      () => setIndex((i) => (i + 1) % images.length),
-      3000
-    );
+    timer.current = setInterval(() => setIndex((i) => (i + 1) % images.length), 3000);
   };
 
   return (
@@ -53,16 +46,7 @@ function CollectorCarousel({ images }) {
 }
 
 export default function WardAdminDashboard() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { logout, session } = useContext(SessionContext);
-  const navigate = useNavigate();
-
-  const handleLogout = () => {
-    logout();
-    navigate("/");
-  };
-
-  // Data placeholders
+  // Dashboard data placeholders
   const totalAreaCovered = "5.2 km²";
   const gcLoggedIn = garbageCollectorImages.length;
   const cleanlinessScore = "94%";
@@ -71,181 +55,75 @@ export default function WardAdminDashboard() {
   const lastSync = "5 min ago";
   const activeGC = 7;
 
-  // Toggle sidebar for mobile
-  const toggleSidebar = () => setSidebarOpen((open) => !open);
-
   return (
-    <>
-      <div style={styles.bg}>
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-
-        <main style={styles.main}>
-          <div style={styles.topbar}>
-            {/* Hamburger Button visible on mobile */}
-            <button
-              className="hamburger-btn"
-              onClick={toggleSidebar}
-              aria-label="Toggle menu"
-            >
-              {sidebarOpen ? (
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  stroke="#6c2ebe"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                >
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              ) : (
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  stroke="#6c2ebe"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                >
-                  <line x1="3" y1="6" x2="21" y2="6" />
-                  <line x1="3" y1="12" x2="21" y2="12" />
-                  <line x1="3" y1="18" x2="21" y2="18" />
-                </svg>
-              )}
-            </button>
-            <div style={styles.titleBox}>
-              <h1 style={styles.heading}>Ward Admin Dashboard</h1>
-              <span style={styles.lastSync}>Last Sync: {lastSync}</span>
-            </div>
-            <div style={styles.profile}>
-              <span style={styles.profileName}>
-                {session && session.name ? session.name[0] : "A"}
-              </span>
-              <button style={styles.logoutBtn} onClick={handleLogout}>
-                Logout
-              </button>
-            </div>
-          </div>
-
-          <div style={styles.cardGrid}>
-            <div style={styles.card}>
-              <div style={styles.cardLabel}>Total Area Covered</div>
-              <div style={styles.cardValuePrimary}>{totalAreaCovered}</div>
-            </div>
-            <div style={styles.card}>
-              <div style={styles.cardLabel}>GCs Logged In</div>
-              <div style={styles.cardValueGreen}>{gcLoggedIn}</div>
-            </div>
-            <div style={styles.card}>
-              <div style={styles.cardLabel}>Cleanliness Score</div>
-              <div style={styles.cardValuePrimary}>{cleanlinessScore}</div>
-            </div>
-            <div style={styles.card}>
-              <div style={styles.cardLabel}>Checkpoints Monitored</div>
-              <div style={styles.cardValue}>{checkpoints}</div>
-              <div style={styles.cardSub}>
-                Covered:{" "}
-                <span style={styles.subGreen}>{checkpointsCovered}</span>
-              </div>
-            </div>
-            <div style={styles.card}>
-              <div style={styles.cardLabel}>Active Collectors</div>
-              <div style={styles.cardValue}>{activeGC}</div>
-            </div>
-            <div style={styles.card}>
-              <div style={styles.cardLabel}>Download Reports</div>
-              <button style={styles.reportButton}>Performance Report</button>
-            </div>
-          </div>
-
-          <div style={styles.row}>
-            <div style={styles.widget}>
-              <div style={styles.widgetTitle}>Checkpoints Progress</div>
-              <div style={styles.progressBarBox}>
-                <div
-                  style={{
-                    ...styles.progressBar,
-                    width: `${(checkpointsCovered / checkpoints) * 100}%`,
-                  }}
-                />
-              </div>
-              <div style={styles.progressLabel}>
-                {checkpointsCovered} of {checkpoints} checkpoints covered
-              </div>
-            </div>
-            <div style={styles.widget}>
-              <div style={styles.widgetTitle}>Today's Collector Activity</div>
-              <div style={styles.gcCarousel}>
-                <CollectorCarousel images={garbageCollectorImages} />
-              </div>
-            </div>
-          </div>
-        </main>
+    <DashboardLayout>
+      <div style={styles.titleBox}>
+        <h1 style={styles.heading}>Ward Admin Dashboard</h1>
+        <span style={styles.lastSync}>Last Sync: {lastSync}</span>
       </div>
 
-      <style>{`
-        /* Hamburger button */
-        .hamburger-btn {
-          display: none;
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          padding: 4px 8px 0 0;
-          margin-right: 12px;
-          align-self: center;
-        }
+      <div style={styles.cardGrid}>
+        <div style={styles.card}>
+          <div style={styles.cardLabel}>Total Area Covered</div>
+          <div style={styles.cardValuePrimary}>{totalAreaCovered}</div>
+        </div>
+        <div style={styles.card}>
+          <div style={styles.cardLabel}>GCs Logged In</div>
+          <div style={styles.cardValueGreen}>{gcLoggedIn}</div>
+        </div>
+        <div style={styles.card}>
+          <div style={styles.cardLabel}>Cleanliness Score</div>
+          <div style={styles.cardValuePrimary}>{cleanlinessScore}</div>
+        </div>
+        <div style={styles.card}>
+          <div style={styles.cardLabel}>Checkpoints Monitored</div>
+          <div style={styles.cardValue}>{checkpoints}</div>
+          <div style={styles.cardSub}>
+            Covered: <span style={styles.subGreen}>{checkpointsCovered}</span>
+          </div>
+        </div>
+        <div style={styles.card}>
+          <div style={styles.cardLabel}>Active Collectors</div>
+          <div style={styles.cardValue}>{activeGC}</div>
+        </div>
+        <div style={styles.card}>
+          <div style={styles.cardLabel}>Download Reports</div>
+          <button style={styles.reportButton}>Performance Report</button>
+        </div>
+      </div>
 
-        /* Responsive styles */
-        @media (max-width: 600px) {
-          /* Show hamburger */
-          .hamburger-btn {
-            display: block;
-          }
-          main {
-            padding: 14px 12px 20px 12px !important;
-          }
-          .cardGrid {
-            grid-template-columns: 1fr !important;
-            gap: 13px !important;
-            margin-bottom: 18px !important;
-          }
-          .row {
-            flex-direction: column !important;
-            gap: 17px !important;
-          }
-        }
-      `}</style>
-    </>
+      <div style={styles.row}>
+        <div style={styles.widget}>
+          <div style={styles.widgetTitle}>Checkpoints Progress</div>
+          <div style={styles.progressBarBox}>
+            <div
+              style={{
+                ...styles.progressBar,
+                width: `${(checkpointsCovered / checkpoints) * 100}%`,
+              }}
+            />
+          </div>
+          <div style={styles.progressLabel}>
+            {checkpointsCovered} of {checkpoints} checkpoints covered
+          </div>
+        </div>
+        <div style={styles.widget}>
+          <div style={styles.widgetTitle}>Today's Collector Activity</div>
+          <div style={styles.gcCarousel}>
+            <CollectorCarousel images={garbageCollectorImages} />
+          </div>
+        </div>
+      </div>
+    </DashboardLayout>
   );
 }
 
 const styles = {
-  bg: {
-    minHeight: "100vh",
-    width: "100vw",
-    background: "#f7f7fa",
-    display: "flex",
-    fontFamily: "'Inter','Segoe UI',Arial,sans-serif",
-  },
-  main: {
-    flex: 1,
-    padding: "35px 36px 20px 44px",
-    minWidth: 0,
-    display: "flex",
-    flexDirection: "column",
-  },
-  topbar: {
-    width: "100%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 20,
-  },
   titleBox: {
     display: "flex",
     flexDirection: "column",
     gap: 2,
+    marginBottom: 20,
   },
   heading: {
     fontWeight: 800,
@@ -257,37 +135,6 @@ const styles = {
     color: "#a387da",
     fontSize: 13,
     fontWeight: 500,
-  },
-  profile: {
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-  },
-  profileName: {
-    width: 42,
-    height: 42,
-    background: "linear-gradient(133deg, #c7aaff 0%, #8e53e6 90%)",
-    color: "#fff",
-    fontWeight: 700,
-    fontSize: 18,
-    borderRadius: "50%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    boxShadow: "0 2px 12px #c7aaff55",
-    letterSpacing: 1,
-  },
-  logoutBtn: {
-    marginLeft: 16,
-    padding: "6px 18px",
-    background: "#efebfa",
-    color: "#6926a5",
-    fontWeight: 600,
-    fontSize: "14px",
-    border: "none",
-    borderRadius: 6,
-    cursor: "pointer",
-    transition: "background 0.12s",
   },
   cardGrid: {
     width: "100%",
@@ -435,5 +282,5 @@ const styles = {
     position: "absolute",
     left: 0,
     top: 0,
-  },
+  }
 };
