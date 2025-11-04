@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AuthPage from "./pages/AuthPage";
 import WardAdminDashboard from "./pages/WardAdminDashboard";
 import CollectorsPage from "./pages/CollectorsPage";
+import RoutesPage from "./pages/RoutesPage";
 import SplashScreen from "./components/SplashScreen";
 
 // Context: only interacts with localStorage
@@ -73,6 +74,14 @@ function App() {
             element={
               <PrivateRoute role="Ward Admin">
                 <CollectorsPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/routes"
+            element={
+              <PrivateRoute role="Ward Admin">
+                <RoutesPage />
               </PrivateRoute>
             }
           />

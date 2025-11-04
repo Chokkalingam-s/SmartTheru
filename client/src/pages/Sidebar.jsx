@@ -14,11 +14,11 @@ export default function Sidebar({ isOpen, onClose }) {
         <nav>
           <div style={styles.navSection}>
               <Link to="/wardadmin" className={`navItem${location.pathname === "/wardadmin" ? " active" : ""}`}>Dashboard</Link>
+            <Link to="/routes" className={`navItem${location.pathname === "/routes" ? " active" : ""}`}>
+              Routes
+            </Link>
             <a href="#" className="navItem">
-              Map
-            </a>
-            <a href="#" className="navItem">
-              Checkpoints
+              Assign Routes
             </a>
             <Link to="/collectors" className={`navItem${location.pathname === "/collectors" ? " active" : ""}`}>Collectors</Link>
             <a href="#" className="navItem">
