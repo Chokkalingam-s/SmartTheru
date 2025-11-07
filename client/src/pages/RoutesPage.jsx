@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useCallback } from "react";
 import DashboardLayout from "./DashboardLayout";
-import { GoogleMap, LoadScript, Marker, Polygon } from "@react-google-maps/api";
+import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+const LIBRARIES = ["places"]; // Static library array to prevent reload warnings
 
 export default function RoutesPage() {
   const [routes, setRoutes] = useState([]);
@@ -16,8 +17,8 @@ export default function RoutesPage() {
   const [markers, setMarkers] = useState([]);
   const [routeName, setRouteName] = useState("");
   const [mapInstance, setMapInstance] = useState(null);
-  const [autocompleteService, setAutocompleteService] = useState(null);
   const [searchSuggestions, setSearchSuggestions] = useState([]);
+  const [placesService, setPlacesService] = useState(null);
 
   useEffect(() => {
     fetchRoutes();
@@ -72,37 +73,42 @@ export default function RoutesPage() {
     setMarkers((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleSearchChange = (e) => {
+  const handleSearchChange = async (e) => {
     const value = e.target.value;
     setSearchQuery(value);
 
-    if (value.length > 2 && autocompleteService) {
-      autocompleteService.getPlacePredictions(
-        { input: value, componentRestrictions: { country: "in" } },
-        (predictions, status) => {
-          if (status === window.google.maps.places.PlacesServiceStatus.OK) {
-            setSearchSuggestions(predictions || []);
-          }
-        }
-      );
+    if (value.length > 2 && window.google?.maps?.places) {
+      try {
+        const { suggestions } = await window.google.maps.places.AutocompleteSuggestion.fetchAutocompleteSuggestions({
+          input: value,
+          includedRegionCodes: ["in"],
+        });
+        setSearchSuggestions(suggestions || []);
+      } catch (error) {
+        console.error("Autocomplete error:", error);
+        setSearchSuggestions([]);
+      }
     } else {
       setSearchSuggestions([]);
     }
   };
 
-  const handleSelectLocation = (placeId) => {
-    const service = new window.google.maps.places.PlacesService(mapInstance);
-    service.getDetails({ placeId }, (place, status) => {
-      if (status === window.google.maps.places.PlacesServiceStatus.OK) {
-        const location = {
-          lat: place.geometry.location.lat(),
-          lng: place.geometry.location.lng(),
-        };
-        setMapCenter(location);
-        setSearchQuery(place.formatted_address || place.name);
-        setSearchSuggestions([]);
-      }
-    });
+  const handleSelectLocation = async (placePrediction) => {
+    try {
+      const place = await placePrediction.toPlace();
+      await place.fetchFields({ fields: ["location", "displayName"] });
+      
+      const location = {
+        lat: place.location.lat(),
+        lng: place.location.lng(),
+      };
+      setMapCenter(location);
+      setSearchQuery(place.displayName || "Selected location");
+      setSearchSuggestions([]);
+    } catch (error) {
+      console.error("Place details error:", error);
+      alert("Failed to get location details");
+    }
   };
 
   const handleSaveRoute = async (e) => {
@@ -172,8 +178,9 @@ export default function RoutesPage() {
 
   const onMapLoad = useCallback((map) => {
     setMapInstance(map);
-    if (window.google) {
-      setAutocompleteService(new window.google.maps.places.AutocompleteService());
+    if (window.google?.maps?.places) {
+      const service = new window.google.maps.places.PlacesService(map);
+      setPlacesService(service);
     }
   }, []);
 
@@ -261,13 +268,13 @@ export default function RoutesPage() {
                 </label>
                 {searchSuggestions.length > 0 && (
                   <div style={styles.suggestionsBox}>
-                    {searchSuggestions.map((suggestion) => (
+                    {searchSuggestions.map((suggestion, index) => (
                       <div
-                        key={suggestion.place_id}
+                        key={index}
                         style={styles.suggestionItem}
-                        onClick={() => handleSelectLocation(suggestion.place_id)}
+                        onClick={() => handleSelectLocation(suggestion)}
                       >
-                        {suggestion.description}
+                        {suggestion.placePrediction?.text?.toString() || "Location"}
                       </div>
                     ))}
                   </div>
@@ -283,7 +290,7 @@ export default function RoutesPage() {
                 </p>
               </div>
 
-              <LoadScript googleMapsApiKey={GOOGLE_MAPS_API_KEY} libraries={["places"]}>
+              <LoadScript googleMapsApiKey={GOOGLE_MAPS_API_KEY} libraries={LIBRARIES}>
                 <GoogleMap
                   mapContainerStyle={styles.mapContainer}
                   center={mapCenter}
