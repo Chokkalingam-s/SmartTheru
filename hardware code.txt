@@ -1,0 +1,128 @@
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
+#include <TinyGPS++.h>
+
+// WiFi - Your mobile hotspot
+const char* ssid = "Nivicky";
+const char* password = "isokie64";
+
+// Server - Your Dev Tunnel (assignmentId = 1, change if needed)
+const char* serverUrl = "https://ntqpk0xq-5000.inc1.devtunnels.ms/api/assignments/gps-update/1";
+
+// GPS Setup
+TinyGPSPlus gps;
+HardwareSerial GPS(1); // RX=2, TX=5
+
+// Tracking variables
+double lastLat = 0.0;
+double lastLng = 0.0;
+unsigned long lastUpdate = 0;
+const unsigned long updateInterval = 3000; // Update every 3 seconds
+
+void setup() {
+  Serial.begin(115200);
+  
+  // GPS: RX=2, TX=5
+  GPS.begin(9600, SERIAL_8N1, 2, 5);
+  
+  Serial.println("🚛 Smart Theru GPS Tracker Starting...");
+  Serial.println("📡 Server: https://ntqpk0xq-5000.inc1.devtunnels.ms");
+  
+  // Connect to WiFi hotspot
+  WiFi.begin(ssid, password);
+  Serial.print("📶 Connecting to ");
+  Serial.print(ssid);
+  
+  int attempts = 0;
+  while (WiFi.status() != WL_CONNECTED && attempts < 30) {
+    delay(1000);
+    Serial.print(".");
+    attempts++;
+  }
+  
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println();
+    Serial.println("✅ WiFi Connected!");
+    Serial.print("🌐 IP: ");
+    Serial.println(WiFi.localIP());
+    Serial.print("📍 Server ready: ");
+    Serial.println(serverUrl);
+  } else {
+    Serial.println("❌ WiFi Failed!");
+  }
+}
+
+void loop() {
+  // Read GPS continuously
+  while (GPS.available() > 0) {
+    if (gps.encode(GPS.read())) {
+      // GPS data updated
+    }
+  }
+
+  // Send GPS if valid + time elapsed
+  if (gps.location.isValid() && millis() - lastUpdate > updateInterval) {
+    double lat = gps.location.lat();
+    double lng = gps.location.lng();
+    
+    // Send if location changed >10m
+    if (abs(lat - lastLat) > 0.00009 || abs(lng - lastLng) > 0.00009) {
+      lastLat = lat;
+      lastLng = lng;
+      
+      Serial.printf("📍 GPS: %.6f, %.6f\n", lat, lng);
+      
+      if (sendGPSToServer(lat, lng)) {
+        Serial.println("✅ Server Updated!");
+      } else {
+        Serial.println("❌ Server Error!");
+      }
+      
+      lastUpdate = millis();
+    }
+  }
+  
+  // GPS Status
+  if (millis() % 10000 < 1000) { // Every 10s
+    if (gps.location.isValid()) {
+      Serial.print("🛰️  Satellites: ");
+      Serial.println(gps.satellites.value());
+    } else {
+      Serial.println("🛰️  No GPS Fix");
+    }
+  }
+  
+  delay(500);
+}
+
+bool sendGPSToServer(double lat, double lng) {
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("📶 WiFi Lost!");
+    return false;
+  }
+
+  HTTPClient http;
+  http.begin(serverUrl);
+  http.addHeader("Content-Type", "application/json");
+  http.setTimeout(10000); // 10s timeout
+  
+  // JSON Payload
+  StaticJsonDocument<200> doc;
+  doc["lat"] = round(lat * 1e6) / 1e6;  // 6 decimal precision
+  doc["lng"] = round(lng * 1e6) / 1e6;
+  
+  String payload;
+  serializeJson(doc, payload);
+  
+  Serial.printf("📤 Sending: %s\n", payload.c_str());
+  
+  int httpCode = http.POST(payload);
+  String response = http.getString();
+  
+  Serial.printf("📥 Response: %d - %s\n", httpCode, response.c_str());
+  
+  http.end();
+  
+  return httpCode == 200;
+}
