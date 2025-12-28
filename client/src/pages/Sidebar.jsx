@@ -17,9 +17,10 @@ export default function Sidebar({ isOpen, onClose }) {
             <Link to="/routes" className={`navItem${location.pathname === "/routes" ? " active" : ""}`}>
               Routes
             </Link>
-            <a href="#" className="navItem">
+            <Link to="/assign-routes" className={`navItem${location.pathname === "/assign-routes" ? " active" : ""}`}>
               Assign Routes
-            </a>
+            </Link>
+            <Link to="/track" className={`navItem${location.pathname === "/track" ? " active" : ""}`}>Track Assigned Routes</Link>
             <Link to="/collectors" className={`navItem${location.pathname === "/collectors" ? " active" : ""}`}>Collectors</Link>
             <a href="#" className="navItem">
               Reports

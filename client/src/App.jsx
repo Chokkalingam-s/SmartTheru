@@ -4,6 +4,8 @@ import AuthPage from "./pages/AuthPage";
 import WardAdminDashboard from "./pages/WardAdminDashboard";
 import CollectorsPage from "./pages/CollectorsPage";
 import RoutesPage from "./pages/RoutesPage";
+import AssignRoutes from "./pages/AssignRoutes";
+import TrackAssignedRoutes from "./pages/TrackAssignedRoutes";
 import SplashScreen from "./components/SplashScreen";
 
 // Context: only interacts with localStorage
@@ -82,6 +84,22 @@ function App() {
             element={
               <PrivateRoute role="Ward Admin">
                 <RoutesPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/assign-routes"
+            element={
+              <PrivateRoute role="Ward Admin">
+                <AssignRoutes />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/track"
+            element={
+              <PrivateRoute role="Ward Admin">
+                <TrackAssignedRoutes />
               </PrivateRoute>
             }
           />

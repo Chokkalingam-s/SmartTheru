@@ -10,7 +10,7 @@ export default function RoutesPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingRoute, setEditingRoute] = useState(null);
   const [loading, setLoading] = useState(true);
-  
+
   // Map and location states
   const [mapCenter, setMapCenter] = useState({ lat: 13.0827, lng: 80.2707 }); // Default: Chennai
   const [searchQuery, setSearchQuery] = useState("");
@@ -48,6 +48,7 @@ export default function RoutesPage() {
       setEditingRoute(null);
       setRouteName("");
       setMarkers([]);
+      // mapCenter will be updated by geolocation effect when modal opens
     }
     setShowModal(true);
   };
@@ -60,6 +61,39 @@ export default function RoutesPage() {
     setSearchQuery("");
     setSearchSuggestions([]);
   };
+
+  // Get current location whenever modal is opened (for new routes mainly)
+  useEffect(() => {
+    if (!showModal) return;
+
+    if (!navigator.geolocation) {
+      console.warn("Geolocation not supported by this browser");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const loc = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+        };
+        setMapCenter(loc);
+        if (mapInstance) {
+          mapInstance.setCenter(loc);
+          mapInstance.setZoom(16);
+        }
+      },
+      (err) => {
+        console.error("Geolocation error:", err);
+        // fallback: keep default Chennai center
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 1000,
+      }
+    );
+  }, [showModal, mapInstance]);
 
   const handleMapClick = useCallback((e) => {
     const newMarker = {
@@ -79,10 +113,13 @@ export default function RoutesPage() {
 
     if (value.length > 2 && window.google?.maps?.places) {
       try {
-        const { suggestions } = await window.google.maps.places.AutocompleteSuggestion.fetchAutocompleteSuggestions({
-          input: value,
-          includedRegionCodes: ["in"],
-        });
+        const { suggestions } =
+          await window.google.maps.places.AutocompleteSuggestion.fetchAutocompleteSuggestions(
+            {
+              input: value,
+              includedRegionCodes: ["in"],
+            }
+          );
         setSearchSuggestions(suggestions || []);
       } catch (error) {
         console.error("Autocomplete error:", error);
@@ -93,18 +130,42 @@ export default function RoutesPage() {
     }
   };
 
-  const handleSelectLocation = async (placePrediction) => {
+  // Optional: geocode free‑text when pressing Enter
+  const geocodeAddress = (address) => {
+    if (!window.google || !mapInstance) return;
+
+    const geocoder = new window.google.maps.Geocoder();
+    geocoder.geocode({ address }, (results, status) => {
+      if (status === "OK" && results[0]) {
+        const loc = results[0].geometry.location;
+        const location = { lat: loc.lat(), lng: loc.lng() };
+        setMapCenter(location);
+        mapInstance.setCenter(location);
+        mapInstance.setZoom(16);
+      } else {
+        console.warn("Geocode failed:", status);
+      }
+    });
+  };
+
+  const handleSelectLocation = async (suggestion) => {
     try {
-      const place = await placePrediction.toPlace();
+      const place = await suggestion.placePrediction.toPlace();
       await place.fetchFields({ fields: ["location", "displayName"] });
-      
+
       const location = {
         lat: place.location.lat(),
         lng: place.location.lng(),
       };
+
       setMapCenter(location);
       setSearchQuery(place.displayName || "Selected location");
       setSearchSuggestions([]);
+
+      if (mapInstance) {
+        mapInstance.panTo(location);
+        mapInstance.setZoom(16);
+      }
     } catch (error) {
       console.error("Place details error:", error);
       alert("Failed to get location details");
@@ -113,12 +174,12 @@ export default function RoutesPage() {
 
   const handleSaveRoute = async (e) => {
     e.preventDefault();
-    
+
     if (!routeName.trim()) {
       alert("Please enter a route name");
       return;
     }
-    
+
     if (markers.length === 0) {
       alert("Please mark at least one point on the map");
       return;
@@ -134,7 +195,7 @@ export default function RoutesPage() {
       const url = editingRoute
         ? `http://localhost:5000/api/routes/${editingRoute.id}`
         : "http://localhost:5000/api/routes";
-      
+
       const method = editingRoute ? "PUT" : "POST";
 
       const response = await fetch(url, {
@@ -161,9 +222,12 @@ export default function RoutesPage() {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/routes/${routeId}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `http://localhost:5000/api/routes/${routeId}`,
+        {
+          method: "DELETE",
+        }
+      );
 
       if (response.ok) {
         fetchRoutes();
@@ -197,7 +261,9 @@ export default function RoutesPage() {
         {loading ? (
           <div style={styles.loading}>Loading...</div>
         ) : routes.length === 0 ? (
-          <div style={styles.emptyState}>No routes found. Click "Add Route" to create one.</div>
+          <div style={styles.emptyState}>
+            No routes found. Click "Add Route" to create one.
+          </div>
         ) : (
           <table style={styles.table}>
             <thead>
@@ -241,7 +307,7 @@ export default function RoutesPage() {
             <h3 style={styles.modalHeading}>
               {editingRoute ? "Edit Route" : "Add New Route"}
             </h3>
-            
+
             <form onSubmit={handleSaveRoute} style={styles.form}>
               <label style={styles.label}>
                 Route Name
@@ -262,6 +328,14 @@ export default function RoutesPage() {
                     type="text"
                     value={searchQuery}
                     onChange={handleSearchChange}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        if (searchQuery.trim()) {
+                          geocodeAddress(searchQuery.trim());
+                        }
+                      }
+                    }}
                     style={styles.input}
                     placeholder="Search for a location..."
                   />
@@ -274,7 +348,8 @@ export default function RoutesPage() {
                         style={styles.suggestionItem}
                         onClick={() => handleSelectLocation(suggestion)}
                       >
-                        {suggestion.placePrediction?.text?.toString() || "Location"}
+                        {suggestion.placePrediction?.text?.toString() ||
+                          "Location"}
                       </div>
                     ))}
                   </div>
@@ -283,14 +358,18 @@ export default function RoutesPage() {
 
               <div style={styles.mapInfoBox}>
                 <p style={styles.infoText}>
-                  📍 Click on the map to mark collection points ({markers.length} points marked)
+                  📍 Click on the map to mark collection points (
+                  {markers.length} points marked)
                 </p>
                 <p style={styles.infoTextSmall}>
                   Mark points along streets where garbage collectors should pass
                 </p>
               </div>
 
-              <LoadScript googleMapsApiKey={GOOGLE_MAPS_API_KEY} libraries={LIBRARIES}>
+              <LoadScript
+                googleMapsApiKey={GOOGLE_MAPS_API_KEY}
+                libraries={LIBRARIES}
+              >
                 <GoogleMap
                   mapContainerStyle={styles.mapContainer}
                   center={mapCenter}
@@ -339,7 +418,11 @@ export default function RoutesPage() {
                 <button type="submit" style={styles.submitButton}>
                   {editingRoute ? "Update Route" : "Save Route"}
                 </button>
-                <button type="button" onClick={closeModal} style={styles.cancelButton}>
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  style={styles.cancelButton}
+                >
                   Cancel
                 </button>
               </div>

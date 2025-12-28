@@ -5,6 +5,7 @@ const { connectDB } = require('./config/config');
 const authRoutes = require('./routes/authRoutes');
 const collectorRoutes = require('./routes/collectorRoutes');
 const routesRouter = require('./routes/routes');
+const assignmentRoutes = require('./routes/assignmentRoutes');
 const { sequelize } = require('./models');
 
 dotenv.config();
@@ -22,6 +23,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/collectors', collectorRoutes);
 app.use('/api', routesRouter);
+app.use('/api/assignments', assignmentRoutes);
 
 app.get('/', (req, res) => {
   res.send('SmartTheru backend running...');
