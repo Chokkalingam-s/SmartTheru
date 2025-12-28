@@ -74,7 +74,7 @@ router.get('/', async (req, res) => {
 });
 
 
-// POST GPS update from ESP32 - ✅ TRACKS EXACT POINTS
+// POST GPS update from ESP32 - ✅ FIXED SCOPE + PERMANENT COVERAGE
 router.post('/gps-update/:assignmentId', async (req, res) => {
   try {
     const { lat, lng } = req.body;
@@ -90,13 +90,23 @@ router.post('/gps-update/:assignmentId', async (req, res) => {
     assignment.currentLng = parseFloat(lng);
     assignment.lastUpdated = new Date();
 
-    // ✅ FIXED: Track EXACT covered points
+    let previouslyCovered = []; // ✅ DECLARED HERE (outside if)
+    let newlyCovered = [];     // ✅ DECLARED HERE
+
+    // ✅ FIXED: PRESERVE PREVIOUSLY COVERED POINTS
     const route = await sequelize.models.Route.findByPk(assignment.routeId);
     if (route && route.points && Array.isArray(route.points)) {
-      const coveredPointIndices = []; // [0, 2, 4]
+      // Get EXISTING covered points (persistent)
+      previouslyCovered = Array.isArray(assignment.coveredPoints) ? assignment.coveredPoints : [];
       
-      // Check distance to EACH point
+      // Find NEWLY covered points (20m precision)
       route.points.forEach((point, index) => {
+        // Skip if already covered
+        if (previouslyCovered.includes(index)) {
+          console.log(`Point ${index + 1}: ✅ Already covered (permanent)`);
+          return;
+        }
+        
         const distance = haversineDistance(
           parseFloat(lat), parseFloat(lng), 
           parseFloat(point.lat), parseFloat(point.lng)
@@ -104,16 +114,21 @@ router.post('/gps-update/:assignmentId', async (req, res) => {
         
         console.log(`Point ${index + 1}: ${distance.toFixed(1)}m`);
         
-        if (distance <= 50) { // 50 meters
-          coveredPointIndices.push(index); // Track EXACT index
+        // ✅ 20m PRECISE radius
+        if (distance <= 20) {
+          newlyCovered.push(index);
+          console.log(`✅ Point ${index + 1} NEWLY COVERED!`);
         }
       });
       
-      // Update covered points array & count
-      assignment.coveredPoints = coveredPointIndices;
-      assignment.pointsCovered = coveredPointIndices.length;
+      // ✅ MERGE: previous + new (PERMANENT)
+      const allCoveredPoints = [...new Set([...previouslyCovered, ...newlyCovered])];
       
-      console.log(`📊 Covered points: [${coveredPointIndices.join(', ')}] → ${assignment.pointsCovered}/${route.points.length}`);
+      // Update
+      assignment.coveredPoints = allCoveredPoints;
+      assignment.pointsCovered = allCoveredPoints.length;
+      
+      console.log(`📊 Permanent coverage: [${previouslyCovered.join(', ')}] + [${newlyCovered.join(', ')}] = [${allCoveredPoints.join(', ')}] → ${assignment.pointsCovered}/${route.points.length}`);
       
       // Update status
       if (assignment.pointsCovered >= assignment.totalPoints) {
@@ -126,8 +141,10 @@ router.post('/gps-update/:assignmentId', async (req, res) => {
     await assignment.save();
     res.json({ 
       success: true, 
+      previouslyCovered: previouslyCovered.length,
+      newlyCovered: newlyCovered.length,
+      totalCovered: assignment.pointsCovered,
       coveredPoints: assignment.coveredPoints,
-      pointsCovered: assignment.pointsCovered,
       totalPoints: assignment.totalPoints
     });
   } catch (error) {
@@ -135,6 +152,8 @@ router.post('/gps-update/:assignmentId', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+
 
 
 
