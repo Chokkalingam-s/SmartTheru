@@ -48,6 +48,7 @@ router.post('/assign', async (req, res) => {
 });
 
 // GET assignments
+// GET assignments - FIXED to include route.points!
 router.get('/', async (req, res) => {
   try {
     const assignments = await sequelize.models.RouteAssignment.findAll({
@@ -59,11 +60,12 @@ router.get('/', async (req, res) => {
         },
         { 
           model: sequelize.models.Route, 
-          attributes: ['name', 'totalPoints'],
+          attributes: ['name', 'totalPoints', 'points'],  // ✅ ADD 'points' HERE
           as: 'route'
         }
       ]
     });
+    console.log("📤 Assignments with points:", assignments.length);
     res.json(assignments);
   } catch (error) {
     console.error('Assignments error:', error);
@@ -71,7 +73,8 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST GPS update from ESP32
+
+// POST GPS update from ESP32 - ✅ TRACKS EXACT POINTS
 router.post('/gps-update/:assignmentId', async (req, res) => {
   try {
     const { lat, lng } = req.body;
@@ -87,23 +90,33 @@ router.post('/gps-update/:assignmentId', async (req, res) => {
     assignment.currentLng = parseFloat(lng);
     assignment.lastUpdated = new Date();
 
-    // Check route points coverage (50m radius)
+    // ✅ FIXED: Track EXACT covered points
     const route = await sequelize.models.Route.findByPk(assignment.routeId);
-    if (route && route.points) {
-      let coveredCount = 0;
+    if (route && route.points && Array.isArray(route.points)) {
+      const coveredPointIndices = []; // [0, 2, 4]
+      
+      // Check distance to EACH point
       route.points.forEach((point, index) => {
         const distance = haversineDistance(
           parseFloat(lat), parseFloat(lng), 
-          point.lat, point.lng
+          parseFloat(point.lat), parseFloat(point.lng)
         );
+        
+        console.log(`Point ${index + 1}: ${distance.toFixed(1)}m`);
+        
         if (distance <= 50) { // 50 meters
-          coveredCount++;
+          coveredPointIndices.push(index); // Track EXACT index
         }
       });
       
-      assignment.pointsCovered = coveredCount;
+      // Update covered points array & count
+      assignment.coveredPoints = coveredPointIndices;
+      assignment.pointsCovered = coveredPointIndices.length;
       
-      if (coveredCount >= assignment.totalPoints) {
+      console.log(`📊 Covered points: [${coveredPointIndices.join(', ')}] → ${assignment.pointsCovered}/${route.points.length}`);
+      
+      // Update status
+      if (assignment.pointsCovered >= assignment.totalPoints) {
         assignment.status = 'completed';
       } else {
         assignment.status = 'in_progress';
@@ -111,12 +124,19 @@ router.post('/gps-update/:assignmentId', async (req, res) => {
     }
 
     await assignment.save();
-    res.json({ success: true, covered: assignment.pointsCovered });
+    res.json({ 
+      success: true, 
+      coveredPoints: assignment.coveredPoints,
+      pointsCovered: assignment.pointsCovered,
+      totalPoints: assignment.totalPoints
+    });
   } catch (error) {
     console.error('GPS update error:', error);
     res.status(500).json({ error: error.message });
   }
 });
+
+
 
 // Haversine distance function
 function haversineDistance(lat1, lon1, lat2, lon2) {

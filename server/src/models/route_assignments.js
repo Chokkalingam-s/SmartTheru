@@ -1,7 +1,6 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/config');
 
-// Define model first
 const RouteAssignment = sequelize.define('RouteAssignment', {
   id: {
     type: DataTypes.INTEGER,
@@ -31,6 +30,11 @@ const RouteAssignment = sequelize.define('RouteAssignment', {
   totalPoints: {
     type: DataTypes.INTEGER,
     defaultValue: 0
+  },
+  // ✅ NEW: Track EXACT points covered
+  coveredPoints: {
+    type: DataTypes.JSON,
+    defaultValue: []  // Array of covered point indices [0, 2, 4]
   },
   currentLat: {
     type: DataTypes.DOUBLE,
